@@ -1,2 +1,2 @@
 # dianping
-大众点评店铺信息爬虫程序，python、beautifulSoup，通过一个有规律的url，可以一页一页的获取到店铺的ID，从而完成所有的抓取工作。
+大众点评店铺信息爬虫程序，python、beautifulSoup、sqlalchemy、mysql，通过一个有规律的url，可以一页一页的获取到店铺的ID，通过这个ID可以获取店铺的基本信息以及用户对其的评价等。
