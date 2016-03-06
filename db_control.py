@@ -9,14 +9,14 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 # sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from db_info import session
+from db_info import DB_Session
 
 Base = declarative_base()
 _Logger = logging.getLogger(__name__)
 
 class MysqlControl:
     def __init__(self):
-        self.session= session
+        self.session= DB_Session()
 
     def add_shop(self, res):
         new_shop = Shop(id=res['shopId'],
