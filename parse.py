@@ -1,4 +1,5 @@
 # coding=utf-8
+import datetime
 import logging
 import re
 
@@ -8,7 +9,7 @@ from content import Content
 
 _Logger = logging.getLogger(__name__)
 
-class Shop(object):
+class Parse(object):
 
     def __init__(self):
         self.content = Content()
@@ -20,7 +21,7 @@ class Shop(object):
         self._PHONE_RE = re.compile(r'电话：</span>\s+.+tel">(\d{3,4}.\d+)')
         self._REPLY_RE = re.compile(r'J-busi-reply')
 
-    def process_info(self, info):
+    def parse_shop(self, info):
         basicInfo = list()
         soup = BeautifulSoup(info, "html5lib")
         shop_name_tag = soup.find(class_='shop-name')
@@ -47,14 +48,12 @@ class Shop(object):
                'phoneNum': phoneNum,
                'basicInfo': basicInfo
         }
-        self.db.insert_shop_info(res)
+        self.db.add_shop(res)
         _Logger.info('shop {0}\'s basic info has saved'.format(shopId))
 
-    def process_comment(self, comment):
+    def parse_comment(self, comment):
         shopId = self._ID_RE1.findall(comment)[0]
-        cityName = self._NAME_RE.findall(comment)[0]
         soup = BeautifulSoup(comment, "html5lib")
-        shop_name_tag = soup.find(class_='revitew-title')
         div_tag = soup.find(class_='comment-list')
         content_tag = div_tag.find_all(class_='content')
         user_name_tag = div_tag.find_all(class_='name')
@@ -69,24 +68,24 @@ class Shop(object):
             text = content.find_all(class_='J_brief-cont')[0].contents[0].strip()
             if reply_tag:
                 text += '\n' + reply_tag[0].find_all('p')[0].text.strip()
-            shopName = shop_name_tag.a['title']
             userName = content.find(class_='name').contents[0].string
             rst = []
             for x in content.find_all(class_='rst'):
                 rst.extend(self._RST_RE.findall(x.contents[0]))
             time = time_tag[0].contents[0]
+            if len(time) == 5:
+                year = datetime.datetime.now().strftime('%y')
+                time = year + '-' + time
             res = {'shopId': shopId,
-                   'shopName': shopName,
-                   'cityName': cityName,
                    'userName': userName,
                    'rst': rst,
                    'text': text,
                    'time': time
             }
-            self.db.insert_shop_comment(res)
+            self.db.add_comment(res)
         _Logger.info('shop {0}\'s comments info has saved'.format(shopId))
 
-    def get_all_info(self):
+    def parse_all_info(self):
         for info, comment in self.content.get_all_contents():
-            self.process_info(info)
-            self.process_comment(comment)
+            self.parse_shop(info)
+            self.parse_comment(comment)
