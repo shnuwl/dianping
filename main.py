@@ -1,8 +1,8 @@
 import logging
-from shop import Shop
+from parse import Parse
 
 if __name__ == '__main__':
     logging.basicConfig(level="DEBUG",
-                        filename="D:\dp_more.log",
+                        filename="/var/log/dp_more.log",
                         format="%(asctime)s[%(levelname)s][%(filename)s.%(funcName)s]%(message)s")
-    Shop().get_all_info()
+    Parse().parse_all_info()
