@@ -1,68 +1,80 @@
 #encoding=utf-8
 import logging
 import sys
-import web
 reload(sys)
 sys.setdefaultencoding('utf-8')
+
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 # sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from db_info import db_tpms
+from db_info import session
 
+Base = declarative_base()
 _Logger = logging.getLogger(__name__)
 
 class MysqlControl:
     def __init__(self):
-        self.db = db_tpms
+        self.session= session
 
-    def insert_shop_info(self, res):
-        shop_info = list(self.db.select('shop_info',what="shopId",where="shopId=\""+res['shopId']+"\""))
-        if shop_info:
-            self.db.update('shop_info',
-                            where="shopId=\""+res['shopId']+"\"",
-                            cityName=res['cityName'],
-                            shopName=res['basicInfo'][0],
-                            shopLevel=res['basicInfo'][1],
-                            perConsume=res['basicInfo'][2],
-                            taste=res['basicInfo'][3],
-                            environment=res['basicInfo'][4],
-                            service=res['basicInfo'][5],
-                            addr=res['basicInfo'][6],
-                            phoneNum=res['phoneNum']
-            )
-            print "Added shopId: {0}".format(res['shopId'])
-        else:
-            self.db.insert('shop_info',
-                            shopId=res['shopId'],
-                            cityName=res['cityName'],
-                            shopName=res['basicInfo'][0],
-                            shopLevel=res['basicInfo'][1],
-                            perConsume=res['basicInfo'][2],
-                            taste=res['basicInfo'][3],
-                            environment=res['basicInfo'][4],
-                            service=res['basicInfo'][5],
-                            addr=res['basicInfo'][6],
-                            phoneNum=res['phoneNum']
+    def add_shop(self, res):
+        new_shop = Shop(id=res['shopId'],
+                        name=res['basicInfo'][0],
+                        level=res['basicInfo'][1],
+                        perConsume=res['basicInfo'][2],
+                        taste=res['basicInfo'][3],
+                        environment=res['basicInfo'][4],
+                        service=res['basicInfo'][5],
+                        addr=res['basicInfo'][6],
+                        phoneNum=res['phoneNum'],
+                        cityName=res['cityName'])
+        self.session.merge(new_shop)
+        self.session.commit()
+        print "Added shopId: {0}".format(res['shopId'])
 
-            )
-            print "Added shopId: {0}".format(res['shopId'])
-
-    def insert_shop_comment(self, res):
-        where_dict = {'shopId': res['shopId'],
-                      'userName': res['userName'],
-                      'text':res['text']}
-        comment = list(self.db.select('shop_comment',what="shopId",where=web.db.sqlwhere(where_dict)))
-        if not comment:
+    def add_comment(self, res):
+        query = self.session.query(Comment.id)
+        scalar = query.filter(Comment.shopId == res['shopId'],
+                              Comment.userName == res['userName'],
+                              Comment.text == res['text']).scalar()
+        if not scalar:
             if not res['rst']:
                 res['rst'] = ['-', '-', '-']
-            self.db.insert('shop_comment',
-                            shopId=res['shopId'],
-                            cityName=res['cityName'],
-                            shopName=res['shopName'],
-                            userName= res['userName'],
-                            taste=res['rst'][0],
-                            environment=res['rst'][1],
-                            service=res['rst'][2],
-                            text=res['text'],
-                            time=res['time']
-            )
+            new_comment = Comment(shopId=res['shopId'],
+                                  userName= res['userName'],
+                                  taste=res['rst'][0],
+                                  environment=res['rst'][1],
+                                  service=res['rst'][2],
+                                  text=res['text'],
+                                  time=res['time'])
+            self.session.add(new_comment)
+            self.session.commit()
             print "Added comment from {0}".format(res['userName'])
+
+class Shop(Base):
+    __tablename__ = 'shop'
+
+    id = Column(String(10), primary_key=True)
+    name = Column(String(20))
+    level = Column(String(8))
+    perConsume = Column(String(8))
+    taste = Column(String(3))
+    environment = Column(String(3))
+    service = Column(String(8))
+    addr = Column(String(60))
+    phoneNum = Column(String(15))
+    cityName = Column(String(8))
+
+class Comment(Base):
+    __tablename__ = 'comment'
+
+    id = Column(Integer, primary_key=True)
+    shopId = Column(String(10))
+    userName = Column(String(20))
+    taste = Column(String(3))
+    environment = Column(String(3))
+    service = Column(String(8))
+    text = Column(String(500))
+    time = Column(String(15))
+
